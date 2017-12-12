@@ -2,6 +2,7 @@
 
 # Resource Impl: http://concourse.ci/implementing-resources.html#out:-update-a-resource.
 set -e
+set -x
 
 exec 3>&1 # make stdout available as fd 3 for the result
 exec 1>&2 # redirect all output to stderr for logging
@@ -14,6 +15,8 @@ if [ -z "$source" ]; then
 fi
 #######################################
 
+ls $source
+
 # parse incoming config data
 payload=`cat`
 bucket=$(echo "$payload" | jq -r '.source.bucket')
@@ -24,11 +27,16 @@ options=$(echo "$payload" | jq -r '.source.options // [] | join(" ")')
 AWS_ACCESS_KEY_ID=$(echo "$payload" | jq -r '.source.access_key_id // empty')
 AWS_SECRET_ACCESS_KEY=$(echo "$payload" | jq -r '.source.secret_access_key // empty')
 AWS_DEFAULT_REGION=$(echo "$payload" | jq -r '.source.region // empty')
+SRC_DIR=$(echo "$payload" | jq -r '.source.source // empty')
 
 # Due to precedence rules, must be unset to support AWS IAM Roles.
 if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
   export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
   export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+fi
+
+if [ ! -z ${SRC_DIR} ]; then
+    source=${source}/${SRC_DIR}
 fi
 
 # Export AWS_DEFAULT_REGION if set
