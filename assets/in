@@ -24,6 +24,7 @@ options=$(echo "$payload" | jq -r '.source.options // [] | join(" ")')
 AWS_ACCESS_KEY_ID=$(echo "$payload" | jq -r '.source.access_key_id // empty')
 AWS_SECRET_ACCESS_KEY=$(echo "$payload" | jq -r '.source.secret_access_key // empty')
 AWS_DEFAULT_REGION=$(echo "$payload" | jq -r '.source.region // empty')
+SKIP_DOWNLOAD=$(echo "$payload" | jq -r '.params.no_download // empty')
 
 # Due to precedence rules, must be unset to support AWS IAM Roles.
 if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
@@ -35,7 +36,9 @@ fi
 [ -n "$AWS_DEFAULT_REGION" ] && export AWS_DEFAULT_REGION
 
 echo "Downloading from S3..."
-#eval aws s3 sync "s3://$bucket/$path" $dest $options
+if [[ -z $SKIP_DOWNLOAD ]]; then
+    eval aws s3 sync "s3://$bucket/$path" $dest $options
+fi
 echo "...done."
 
 source "$(dirname $0)/emit.sh" >&3
